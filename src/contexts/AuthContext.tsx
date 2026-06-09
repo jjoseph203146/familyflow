@@ -65,17 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       options: { data: { full_name: fullName } },
     })
     if (error) return { error: error.message }
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        email,
-        full_name: fullName,
-        role: 'parent',
-        points_total: 0,
-        streak_current: 0,
-        streak_longest: 0,
-      })
-      if (profileError) return { error: profileError.message }
+    // Profile is created by the handle_new_user DB trigger — no manual insert needed.
+    // If email confirmation is disabled we get a session immediately; fetch the profile
+    // now so App.tsx routing reflects the signed-in state without waiting for onAuthStateChange.
+    if (data.user && data.session) {
+      await fetchProfile(data.user.id)
     }
     return { error: null }
   }
