@@ -41,7 +41,11 @@ export function AllChores() {
 
   return (
     <AppLayout tabBar={<ParentTabBar />}>
-      <TopBar title="All chores" />
+      <TopBar title="All chores" right={
+        <button className="btn btn-primary btn-sm" onClick={() => navigate('/parent/add-chore')}>
+          + Add chore
+        </button>
+      } />
 
       <div style={{ padding: '4px 16px 8px' }}>
         <div className="scroll-x">
