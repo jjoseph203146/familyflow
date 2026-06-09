@@ -8,21 +8,24 @@ export function JoinFamily() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { refreshProfile } = useAuth()
-  const [code, setCode] = useState(searchParams.get('code') ?? '')
+  const [suffix, setSuffix] = useState(() => {
+    const raw = searchParams.get('code') ?? ''
+    return raw.startsWith('FAM-') ? raw.slice(4) : raw
+  })
   const [role, setRole] = useState<'parent' | 'child'>('child')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault()
-    const normalized = code.trim().toUpperCase()
-    if (!normalized) { setError('Please enter an invite code.'); return }
+    const normalized = suffix.trim().toUpperCase()
+    if (!normalized) { setError('Please enter the last 4 characters of your invite code.'); return }
 
     setLoading(true)
     setError('')
 
     const { error: rpcError } = await supabase.rpc('join_family', {
-      p_invite_code: normalized,
+      p_invite_code: 'FAM-' + normalized,
       p_role: role,
     })
 
@@ -38,9 +41,8 @@ export function JoinFamily() {
     navigate(role === 'parent' ? '/parent' : '/child')
   }
 
-  function handleCodeChange(val: string) {
-    const cleaned = val.toUpperCase().replace(/[^A-Z0-9-]/g, '')
-    setCode(cleaned)
+  function handleSuffixChange(val: string) {
+    setSuffix(val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))
     setError('')
   }
 
@@ -56,14 +58,35 @@ export function JoinFamily() {
         <form onSubmit={handleJoin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div className="input-group">
             <label className="input-label">Invite code</label>
-            <input
-              className={`input-field ${error ? 'error' : ''}`}
-              placeholder="FAM-XXXX"
-              value={code}
-              onChange={e => handleCodeChange(e.target.value)}
-              style={{ fontSize: 22, fontWeight: 700, letterSpacing: '0.1em', textAlign: 'center' }}
-              maxLength={8}
-            />
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              border: `2px solid ${error ? '#EF4444' : '#E5E7EB'}`,
+              borderRadius: 12, overflow: 'hidden', background: '#fff',
+            }}>
+              <span style={{
+                padding: '0 4px 0 16px',
+                fontSize: 22, fontWeight: 800,
+                color: '#5C5CE0', letterSpacing: '0.1em',
+                userSelect: 'none', whiteSpace: 'nowrap',
+              }}>
+                FAM-
+              </span>
+              <input
+                className="input-field"
+                placeholder="XXXX"
+                value={suffix}
+                onChange={e => handleSuffixChange(e.target.value)}
+                style={{
+                  fontSize: 22, fontWeight: 800, letterSpacing: '0.1em',
+                  border: 'none', borderRadius: 0, padding: '14px 16px 14px 0',
+                  flex: 1, outline: 'none', boxShadow: 'none',
+                }}
+                maxLength={4}
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+            </div>
           </div>
 
           <div>
