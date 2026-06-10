@@ -30,11 +30,15 @@ const TYPE_ICON: Record<string, string> = {
 
 export function ParentActivityFeed() {
   const navigate = useNavigate()
-  const { notifications, unreadCount, markNotificationRead } = useFamily()
+  const { notifications, unreadCount, markNotificationRead, clearAllNotifications } = useFamily()
 
   return (
     <AppLayout tabBar={<ParentTabBar />}>
-      <TopBar title="Activity" right={unreadCount > 0 ? <span className="pill pill-orange">{unreadCount} new</span> : undefined} />
+      <TopBar title="Activity" right={
+        notifications.length > 0
+          ? <button className="btn btn-ghost btn-sm" onClick={clearAllNotifications}>Clear all</button>
+          : unreadCount > 0 ? <span className="pill pill-orange">{unreadCount} new</span> : undefined
+      } />
       <div className="screen">
         {notifications.length === 0 ? (
           <div className="empty-state">

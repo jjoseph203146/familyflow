@@ -15,6 +15,7 @@ interface FamilyContextValue {
   loading: boolean
   refresh: () => Promise<void>
   markNotificationRead: (id: string) => Promise<void>
+  clearAllNotifications: () => Promise<void>
 }
 
 const FamilyContext = createContext<FamilyContextValue | null>(null)
@@ -105,28 +106,20 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     if (!profile?.family_id) return
     const familyId = profile.family_id
 
-    const choresChannel = supabase
-      .channel('family-chores')
+    const familyChannel = supabase
+      .channel(`family-${familyId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chores', filter: `family_id=eq.${familyId}` },
         () => load())
-      .subscribe()
-
-    const membersChannel = supabase
-      .channel('family-members')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `family_id=eq.${familyId}` },
         () => load())
-      .subscribe()
-
-    const notifChannel = supabase
-      .channel('user-notifications')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'redemptions', filter: `family_id=eq.${familyId}` },
+        () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${profile.id}` },
         () => load())
       .subscribe()
 
     return () => {
-      supabase.removeChannel(choresChannel)
-      supabase.removeChannel(membersChannel)
-      supabase.removeChannel(notifChannel)
+      supabase.removeChannel(familyChannel)
     }
   }, [profile?.family_id, profile?.id, load])
 
@@ -135,10 +128,16 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
   }
 
+  async function clearAllNotifications() {
+    if (!profile) return
+    await supabase.from('notifications').delete().eq('user_id', profile.id)
+    setNotifications([])
+  }
+
   const unreadCount = notifications.filter(n => !n.read).length
 
   return (
-    <FamilyContext.Provider value={{ family, members, chores, rewards, redemptions, notifications, unreadCount, loading, refresh: load, markNotificationRead }}>
+    <FamilyContext.Provider value={{ family, members, chores, rewards, redemptions, notifications, unreadCount, loading, refresh: load, markNotificationRead, clearAllNotifications }}>
       {pullRefreshing && createPortal(
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,

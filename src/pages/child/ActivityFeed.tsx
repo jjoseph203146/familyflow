@@ -26,11 +26,15 @@ const TYPE_COLOR: Record<string, string> = {
 }
 
 export function ChildActivityFeed() {
-  const { notifications, markNotificationRead } = useFamily()
+  const { notifications, markNotificationRead, clearAllNotifications } = useFamily()
 
   return (
     <AppLayout tabBar={<ChildTabBar />}>
-      <TopBar title="Activity" />
+      <TopBar title="Activity" right={
+        notifications.length > 0
+          ? <button className="btn btn-ghost btn-sm" onClick={clearAllNotifications}>Clear all</button>
+          : undefined
+      } />
       <div className="screen">
         {notifications.length === 0 ? (
           <div className="empty-state">
